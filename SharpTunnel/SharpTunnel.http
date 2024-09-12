@@ -1,0 +1,6 @@
+@SharpTunnel_HostAddress = http://localhost:5178
+
+GET {{SharpTunnel_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
