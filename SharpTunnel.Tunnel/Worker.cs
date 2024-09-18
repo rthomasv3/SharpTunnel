@@ -17,6 +17,10 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // start up web socket connection to tunnel api...
+        // wait for messages and use a service class to process them and send them on
+        // config could come from the socket as well, it could be returned on first connect and then updated any time
+
         while (!stoppingToken.IsCancellationRequested)
         {
             if (_logger.IsEnabled(LogLevel.Information))

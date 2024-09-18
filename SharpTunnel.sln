@@ -5,7 +5,9 @@ VisualStudioVersion = 17.11.35222.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpTunnel.Web", "SharpTunnel.Web\SharpTunnel.Web.csproj", "{B15D7788-0953-4B7D-BB65-52FA7BE4D45E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpTunnel.Tunnel", "SharpTunnel.Tunnel\SharpTunnel.Tunnel.csproj", "{6071E7BD-0A6B-4153-AFE0-3472B8F6646E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpTunnel.Tunnel", "SharpTunnel.Tunnel\SharpTunnel.Tunnel.csproj", "{6071E7BD-0A6B-4153-AFE0-3472B8F6646E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpTunnel.Shared", "SharpTunnel.Shared\SharpTunnel.Shared.csproj", "{38B00C6E-A4ED-4C24-ABE9-703AB6CE5F3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{6071E7BD-0A6B-4153-AFE0-3472B8F6646E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6071E7BD-0A6B-4153-AFE0-3472B8F6646E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6071E7BD-0A6B-4153-AFE0-3472B8F6646E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38B00C6E-A4ED-4C24-ABE9-703AB6CE5F3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38B00C6E-A4ED-4C24-ABE9-703AB6CE5F3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38B00C6E-A4ED-4C24-ABE9-703AB6CE5F3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38B00C6E-A4ED-4C24-ABE9-703AB6CE5F3B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

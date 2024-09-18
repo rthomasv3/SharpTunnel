@@ -1,33 +1,27 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using SharpTunnel.Web.Services;
 
-namespace SharpTunnel
+namespace SharpTunnel;
+
+public class Program
 {
-    public class Program
+    public static void Main(string[] args)
     {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
+        var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+        builder.Services.AddSingleton<TunnelService>();
 
-            builder.Services.AddControllers();
+        builder.Services.AddControllers();
 
-            var app = builder.Build();
+        var app = builder.Build();
 
-            app.UseHttpsRedirection();
+        app.UseHttpsRedirection();
+        app.UseWebSockets();
+        app.UseRouting();
+        app.UseAuthorization();
+        app.MapControllers();
 
-            app.UseWebSockets();
-
-            app.UseRouting();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-
-            app.Run();
-        }
+        app.Run();
     }
 }
