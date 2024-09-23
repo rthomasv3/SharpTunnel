@@ -30,8 +30,12 @@ public class Worker : BackgroundService
         try
         {
             await clientWebSocket.ConnectAsync(new Uri($"ws://localhost:{port}/api/tunnel/start"), stoppingToken);
-            //clientWebSocket.SendAsync(
-            //clientWebSocket.ReceiveAsync(
+            byte[] messageData = System.Text.Encoding.UTF8.GetBytes("Hello, world!");
+            await clientWebSocket.SendAsync(
+                    new ArraySegment<byte>(messageData, 0, messageData.Length),
+                    WebSocketMessageType.Binary,
+                    true,
+                    CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -40,11 +44,29 @@ public class Worker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
+            var buffer = new byte[1024 * 4];
+            var receiveResult = await clientWebSocket.ReceiveAsync(
+                new ArraySegment<byte>(buffer), stoppingToken);
+
+            while (!receiveResult.CloseStatus.HasValue && !stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                Console.WriteLine(System.Text.Encoding.UTF8.GetString(buffer));
+                await Task.Delay(1000, stoppingToken);
+
+                await clientWebSocket.SendAsync(
+                    new ArraySegment<byte>(buffer, 0, receiveResult.Count),
+                    receiveResult.MessageType,
+                    receiveResult.EndOfMessage,
+                    CancellationToken.None);
+
+                receiveResult = await clientWebSocket.ReceiveAsync(
+                    new ArraySegment<byte>(buffer), CancellationToken.None);
             }
-            await Task.Delay(1000, stoppingToken);
+
+            await clientWebSocket.CloseAsync(
+                receiveResult.CloseStatus.Value,
+                receiveResult.CloseStatusDescription,
+                CancellationToken.None);
         }
     }
 }
