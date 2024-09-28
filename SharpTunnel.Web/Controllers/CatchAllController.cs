@@ -1,13 +1,29 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using SharpTunnel.Shared.Models;
+using SharpTunnel.Web.Hubs;
+using SharpTunnel.Web.Services;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SharpTunnel.Controllers;
 
 [ApiController]
 public class CatchAllController : ControllerBase
 {
+    private readonly IHubContext<TunnelHub> _hubContext;
+    private readonly TunnelService _tunnelService;
+
+    public CatchAllController(IHubContext<TunnelHub> hubContext, TunnelService tunnelService)
+    {
+        _hubContext = hubContext;
+        _tunnelService = tunnelService;
+    }
+
     [Route("/{**catchAll}")]
-    public IActionResult CatchAll(string catchAll)
+    public async Task<IActionResult> CatchAll(string catchAll)
     {
         // Steps
         // 1. Translate request path based on routing settings
@@ -30,6 +46,42 @@ public class CatchAllController : ControllerBase
         // https://microsoft.github.io/reverse-proxy/articles/getting-started.html
 
 
-        return Ok($"Catch All: [{HttpContext.Request.Method}] {HttpContext.Request.Path} ({HttpContext.WebSockets.IsWebSocketRequest})");
+        
+        TunnelMessage tunnelMessage = await BuildRequest();
+        await _hubContext.Clients.All.SendAsync("ReceiveMessage", tunnelMessage);
+
+        TunnelMessage response = await _tunnelService.WaitForResponse(HttpContext.TraceIdentifier);
+
+        return Ok(response);
+
+        //return Ok($"Catch All: [{HttpContext.Request.Method}] {HttpContext.Request.Path} ({HttpContext.WebSockets.IsWebSocketRequest})");
+    }
+
+    private async Task<TunnelMessage> BuildRequest()
+    {
+        using MemoryStream ms = new();
+        await HttpContext.Request.Body.CopyToAsync(ms);
+        byte[] body = ms.ToArray();
+
+        WebRequest webRequest = new()
+        {
+            Body = body,
+            Headers = HttpContext.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
+            Host = HttpContext.Request.Host.ToString(),
+            IsWebSocketRequest = HttpContext.WebSockets.IsWebSocketRequest,
+            Method = HttpContext.Request.Method,
+            Path = HttpContext.Request.Path,
+            Query = HttpContext.Request.QueryString.ToString(),
+            Scheme = HttpContext.Request.Scheme,
+        };
+        TunnelMessage tunnelMessage = new()
+        {
+            MessageType = Shared.Enums.TunnelMessageType.WebRequest,
+            Name = "This is a POC",
+            Request = webRequest,
+            TraceIdentifier = HttpContext.TraceIdentifier,
+        };
+
+        return tunnelMessage;
     }
 }

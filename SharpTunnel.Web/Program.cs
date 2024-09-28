@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using SharpTunnel.Web.Hubs;
 using SharpTunnel.Web.Services;
 
 namespace SharpTunnel;
@@ -14,6 +15,8 @@ public class Program
 
         builder.Services.AddControllers();
 
+        builder.Services.AddSignalR();
+
         var app = builder.Build();
 
         app.UseHttpsRedirection();
@@ -21,6 +24,8 @@ public class Program
         app.UseRouting();
         app.UseAuthorization();
         app.MapControllers();
+
+        app.MapHub<TunnelHub>("/tunnelhub");
 
         app.Run();
     }

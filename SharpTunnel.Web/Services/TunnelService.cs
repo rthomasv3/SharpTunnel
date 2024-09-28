@@ -4,7 +4,9 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using SharpTunnel.Shared.Models;
+using SharpTunnel.Web.Hubs;
 using SharpTunnel.Web.Models;
 
 namespace SharpTunnel.Web.Services;
@@ -14,6 +16,8 @@ public class TunnelService
     #region Fields
 
     private readonly ConcurrentQueue<TunnelMessage> _messages = new();
+    private readonly ConcurrentDictionary<string, TunnelMessage> _messageMap = new();
+
     private WebSocket _tunnelSocket;
 
     #endregion
@@ -26,7 +30,7 @@ public class TunnelService
 
     #region Constructor(s)
 
-    public TunnelService()
+    public TunnelService(IHubContext<TunnelHub> hubContext)
     {
 
     }
@@ -42,6 +46,29 @@ public class TunnelService
 
         _tunnelSocket = await webSocketManager.AcceptWebSocketAsync();
         await ProcessMessages();
+    }
+
+    public void ReceiveMessage(TunnelMessage tunnelMessage)
+    {
+        _messageMap.TryAdd(tunnelMessage.TraceIdentifier, tunnelMessage);
+    }
+
+    public async Task<TunnelMessage> WaitForResponse(string traceId)
+    {
+        TunnelMessage message = null;
+        CancellationTokenSource cancellationTokenSource = new();
+        cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(30));
+
+        while (!cancellationTokenSource.IsCancellationRequested)
+        {
+            if (_messageMap.TryGetValue(traceId, out message))
+            {
+                break;
+            }
+            await Task.Delay(5, cancellationTokenSource.Token);
+        }
+
+        return message;
     }
 
     #endregion
