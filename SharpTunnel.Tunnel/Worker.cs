@@ -4,6 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using SharpTunnel.Shared.Enums;
+using SharpTunnel.Shared.Models;
 
 namespace SharpTunnel.Tunnel;
 
@@ -30,6 +32,15 @@ public class Worker : BackgroundService
         try
         {
             await clientWebSocket.ConnectAsync(new Uri($"ws://localhost:{port}/api/tunnel/start"), stoppingToken);
+
+            TunnelMessage message = new TunnelMessage()
+            {
+                MessageType = TunnelMessageType.WebResponse,
+                Name = "This is a test",
+                TraceIdentifier = Guid.NewGuid().ToString(),
+            };
+            System.Runtime.Serialization.Formatter formatter = new();
+
             byte[] messageData = System.Text.Encoding.UTF8.GetBytes("Hello, world!");
             await clientWebSocket.SendAsync(
                     new ArraySegment<byte>(messageData, 0, messageData.Length),

@@ -29,6 +29,7 @@ public class CatchAllController : ControllerBase
         // and then use something like YARP to proxy all connections because you'll be able to see the network
         // https://microsoft.github.io/reverse-proxy/articles/getting-started.html
 
+
         return Ok($"Catch All: [{HttpContext.Request.Method}] {HttpContext.Request.Path} ({HttpContext.WebSockets.IsWebSocketRequest})");
     }
 }
