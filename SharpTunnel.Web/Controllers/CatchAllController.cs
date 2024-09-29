@@ -6,6 +6,7 @@ using SharpTunnel.Web.Hubs;
 using SharpTunnel.Web.Services;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SharpTunnel.Controllers;
@@ -50,6 +51,10 @@ public class CatchAllController : ControllerBase
         TunnelMessage tunnelMessage = await BuildRequest();
         await _hubContext.Clients.All.SendAsync("ReceiveMessage", tunnelMessage);
 
+        //CancellationTokenSource timoutToken = new();
+        //TunnelMessage clientResponse = await _hubContext.Clients.Client("tunnel")
+        //    .InvokeAsync<TunnelMessage>("ReceiveMessage", tunnelMessage, timoutToken.Token);
+
         TunnelMessage response = await _tunnelService.WaitForResponse(HttpContext.TraceIdentifier);
 
         return Ok(response);
@@ -66,6 +71,7 @@ public class CatchAllController : ControllerBase
         WebRequest webRequest = new()
         {
             Body = body,
+            Cookies = HttpContext.Request.Cookies.ToDictionary(x => x.Key, x => x.Value),
             Headers = HttpContext.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
             Host = HttpContext.Request.Host.ToString(),
             IsWebSocketRequest = HttpContext.WebSockets.IsWebSocketRequest,

@@ -41,6 +41,7 @@ public class Worker : BackgroundService
         {
             Console.WriteLine($"Got Message {message.TraceIdentifier} - {message.Name}");
 
+            //https://stackoverflow.com/questions/12373738/how-do-i-set-a-cookie-on-httpclients-httprequestmessage
             //HttpClient client = _httpClientFactory.CreateClient();
             //HttpRequestMessage forwardRequest = new HttpRequestMessage(HttpMethod.Get, "")
             //{

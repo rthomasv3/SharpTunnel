@@ -13,5 +13,6 @@ public class WebRequest
     public byte[] Body { get; init; }
     public string Query { get; init; }
     public Dictionary<string, string> Headers { get; init; }
+    public Dictionary<string, string> Cookies { get; init; }
     public bool IsWebSocketRequest { get; init; }
 }
