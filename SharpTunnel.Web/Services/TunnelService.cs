@@ -56,16 +56,24 @@ public class TunnelService
     public async Task<TunnelMessage> WaitForResponse(string traceId)
     {
         TunnelMessage message = null;
-        CancellationTokenSource cancellationTokenSource = new();
-        cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(30));
 
-        while (!cancellationTokenSource.IsCancellationRequested)
+        try
         {
-            if (_messageMap.TryGetValue(traceId, out message))
+            CancellationTokenSource cancellationTokenSource = new();
+            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(60));
+
+            while (!cancellationTokenSource.IsCancellationRequested)
             {
-                break;
+                if (_messageMap.TryGetValue(traceId, out message))
+                {
+                    break;
+                }
+                await Task.Delay(5, cancellationTokenSource.Token);
             }
-            await Task.Delay(5, cancellationTokenSource.Token);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex.ToString());
         }
 
         return message;

@@ -15,4 +15,6 @@ public class WebRequest
     public Dictionary<string, string> Headers { get; init; }
     public Dictionary<string, string> Cookies { get; init; }
     public bool IsWebSocketRequest { get; init; }
+    public long? ContentLength { get; init; }
+    public string ContentType { get; init; }
 }

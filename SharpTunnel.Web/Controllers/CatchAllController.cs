@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Primitives;
 using SharpTunnel.Shared.Models;
 using SharpTunnel.Web.Hubs;
 using SharpTunnel.Web.Services;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -24,7 +26,7 @@ public class CatchAllController : ControllerBase
     }
 
     [Route("/{**catchAll}")]
-    public async Task<IActionResult> CatchAll(string catchAll)
+    public async Task CatchAll(string catchAll)
     {
         // Steps
         // 1. Translate request path based on routing settings
@@ -46,8 +48,6 @@ public class CatchAllController : ControllerBase
         // and then use something like YARP to proxy all connections because you'll be able to see the network
         // https://microsoft.github.io/reverse-proxy/articles/getting-started.html
 
-
-        
         TunnelMessage tunnelMessage = await BuildRequest();
         await _hubContext.Clients.All.SendAsync("ReceiveMessage", tunnelMessage);
 
@@ -57,7 +57,14 @@ public class CatchAllController : ControllerBase
 
         TunnelMessage response = await _tunnelService.WaitForResponse(HttpContext.TraceIdentifier);
 
-        return Ok(response);
+        if (response != null)
+        {
+            BuildResponse(response.Response);
+        }
+        else
+        {
+            HttpContext.Response.StatusCode = 404;
+        }
 
         //return Ok($"Catch All: [{HttpContext.Request.Method}] {HttpContext.Request.Path} ({HttpContext.WebSockets.IsWebSocketRequest})");
     }
@@ -71,6 +78,8 @@ public class CatchAllController : ControllerBase
         WebRequest webRequest = new()
         {
             Body = body,
+            ContentLength = HttpContext.Request.ContentLength,
+            ContentType = HttpContext.Request.ContentType,
             Cookies = HttpContext.Request.Cookies.ToDictionary(x => x.Key, x => x.Value),
             Headers = HttpContext.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
             Host = HttpContext.Request.Host.ToString(),
@@ -89,5 +98,42 @@ public class CatchAllController : ControllerBase
         };
 
         return tunnelMessage;
+    }
+
+    private void BuildResponse(WebResponse response)
+    {
+        HttpContext.Response.StatusCode = response.StatusCode;
+        HttpContext.Response.ContentType = response.ContentType;
+
+        foreach (var header in response.Headers)
+        {
+            HttpContext.Response.Headers.Append(header.Key, new StringValues(header.Value.ToArray()));
+        }
+
+        foreach (var cookie in response.Cookies)
+        {
+
+        }
+
+        if (response.Path != HttpContext.Request.Path)
+        {
+            string newPath = HttpContext.Request.Scheme + "://" +
+                             HttpContext.Request.Host.ToString() +
+                             response.Path.Substring(response.Path.IndexOf('/')) +
+                             response.Query;
+            HttpContext.Response.Headers.Remove("location");
+            HttpContext.Response.Headers.Location = newPath;
+            HttpContext.Response.StatusCode = StatusCodes.Status307TemporaryRedirect;
+        }
+
+        if (response.Body?.Length > 0 == true)
+        {
+            HttpContext.Response.ContentLength = response.ContentLength;
+            HttpContext.Response.BodyWriter.WriteAsync(response.Body);
+        }
+        else
+        {
+            HttpContext.Response.BodyWriter.Complete();
+        }
     }
 }

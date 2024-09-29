@@ -15,7 +15,11 @@ public class Program
 
         builder.Services.AddControllers();
 
-        builder.Services.AddSignalR();
+        builder.Services.AddSignalR(options =>
+        {
+            options.EnableDetailedErrors = true;
+            options.MaximumReceiveMessageSize = long.MaxValue; // default is 32768
+        });
 
         var app = builder.Build();
 

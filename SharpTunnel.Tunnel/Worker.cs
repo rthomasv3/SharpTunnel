@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
@@ -41,29 +42,21 @@ public class Worker : BackgroundService
         {
             Console.WriteLine($"Got Message {message.TraceIdentifier} - {message.Name}");
 
-            //https://stackoverflow.com/questions/12373738/how-do-i-set-a-cookie-on-httpclients-httprequestmessage
-            //HttpClient client = _httpClientFactory.CreateClient();
-            //HttpRequestMessage forwardRequest = new HttpRequestMessage(HttpMethod.Get, "")
-            //{
-                
-            //};
-            //foreach (KeyValuePair<string, string> header in message.Request.Headers)
-            //{
-            //    forwardRequest.Headers.Add(header.Key, header.Value);
-            //}
-            //HttpResponseMessage localResponse = await client.SendAsync(forwardRequest);
-
-            TunnelMessage response = new()
+            try
             {
-                TraceIdentifier = message.TraceIdentifier,
-                Name = "This is a test of SignalR responding",
-                MessageType = TunnelMessageType.WebResponse,
-                Response = new()
-                {
-                    Url = message.Request.Path
-                }
-            };
-            await hubConnection.InvokeAsync("SendMessage", response);
+                //https://stackoverflow.com/questions/12373738/how-do-i-set-a-cookie-on-httpclients-httprequestmessage
+                HttpClient client = _httpClientFactory.CreateClient();
+                HttpRequestMessage forwardRequest = BuildRequest(message.Request);
+                HttpResponseMessage localResponse = await client.SendAsync(forwardRequest);
+
+                TunnelMessage response = await BuildResponse(localResponse, message.TraceIdentifier);
+
+                await hubConnection.InvokeAsync("SendMessage", response);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.ToString());
+            }
         });
 
         await hubConnection.StartAsync(stoppingToken);
@@ -129,5 +122,90 @@ public class Worker : BackgroundService
         //        receiveResult.CloseStatusDescription,
         //        CancellationToken.None);
         //}
+    }
+
+    private HttpRequestMessage BuildRequest(WebRequest message)
+    {
+        HttpRequestMessage request = new()
+        {
+            Method = HttpMethod.Parse(message.Method),
+            RequestUri = new Uri(MapRoute(message) + message.Path + message.Query)
+        };
+
+        if (message.Body?.Length > 0 == true)
+        {
+            request.Content = new ByteArrayContent(message.Body);
+        }
+
+        foreach (KeyValuePair<string, string> header in message.Headers)
+        {
+            request.Headers.Add(header.Key, header.Value);
+        }
+
+        return request;
+    }
+
+    private string MapRoute(WebRequest message)
+    {
+        return "http://10.0.0.62:80";
+    }
+
+    private async Task<TunnelMessage> BuildResponse(HttpResponseMessage message, string traceId)
+    {
+        byte[] body = await message.Content.ReadAsByteArrayAsync();
+        Dictionary<string, IEnumerable<string>> headers = new();
+        List<string> cookies = new();
+        string contentType = null;
+
+        foreach (KeyValuePair<string, IEnumerable<string>> header in message.Headers)
+        {
+            Console.WriteLine($"{header.Key}: {String.Join(";", header.Value)}");
+
+            headers[header.Key] = header.Value;
+
+            if (header.Key == "Set-Cookie")
+            {
+                cookies = header.Value.ToList();
+            }
+
+            if (header.Key == "Content-Type")
+            {
+                contentType = String.Join(";", header.Value);
+            }
+        }
+
+        if (message.Content != null)
+        {
+            foreach (KeyValuePair<string, IEnumerable<string>> contentHeader in message.Content.Headers)
+            {
+                Console.WriteLine($"{contentHeader.Key}: {String.Join(";", contentHeader.Value)}");
+
+                headers[contentHeader.Key] = contentHeader.Value;
+
+                if (contentHeader.Key == "Content-Type")
+                {
+                    contentType = String.Join(";", contentHeader.Value);
+                }
+            }
+        }
+
+        WebResponse response = new()
+        {
+            Body = body,
+            ContentLength = body.Length,
+            ContentType = contentType,
+            Cookies = cookies,
+            Headers = headers,
+            StatusCode = (int)message.StatusCode,
+            Path = message.RequestMessage.RequestUri.LocalPath,
+            Query = message.RequestMessage.RequestUri.Query,
+        };
+
+        return new TunnelMessage()
+        {
+            MessageType = TunnelMessageType.WebResponse,
+            TraceIdentifier = traceId,
+            Response = response,
+        };
     }
 }
