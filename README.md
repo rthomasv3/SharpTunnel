@@ -1,7 +1,7 @@
 # SharpTunnel
-SharpTunnel is a work-in-progress attempt to create a free and open-source tunnel using C#. The main purpose is to expand my knowledge of servers and HTTP, but hopefully also be a useful tool in the end - at least to me, for self-hosting services without port forwarding or exposing my IP.
+SharpTunnel is a work-in-progress attempt to create a free and open-source tunnel using C#. The main purpose is to expand my knowledge of servers and HTTP, but hopefully also become a useful tool in the end for self-hosting services without port forwarding or exposing my IP.
 
-The core idea is to have an HTTP server that will receive requests, forward them over a web socket to a connected tunnel, which will then forward the request to the end server and return the response (basically a reverse proxy with a tunnel, like a self-hostable Cloudflare Tunnel).
+The core idea is to have a web server that will receive requests, forward them over a web socket to any connected tunnels, which will then forward the request to the end server and return the response (like a self-hostable Cloudflare Tunnel).
 
 The whole system is two parts - a public web server and tunnel service running inside your network.
 
@@ -24,6 +24,6 @@ The system currently works with simple HTTP requests. It's able to retrieve and 
 - [x] Proof-of-concept tunnel connection and request/response serialization
 - [x] Basic HTTP requests with forms and bodies
 - [ ] Files
-- [ ] Web sockets
+- [ ] Web socket connections
 - [ ] UI to configure forwarding settings (including settings storage, likely via SQLite database)
 - [ ] Additional security and authentication
