@@ -6,6 +6,7 @@ using SharpTunnel.Shared.Models;
 using SharpTunnel.Web.Hubs;
 using SharpTunnel.Web.Services;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -75,6 +76,12 @@ public class CatchAllController : ControllerBase
         await HttpContext.Request.Body.CopyToAsync(ms);
         byte[] body = ms.ToArray();
 
+        Dictionary<string, string> form = null;
+        if (HttpContext.Request.HasFormContentType)
+        {
+            form = HttpContext.Request.Form.ToDictionary(x => x.Key, x => x.Value.ToString());
+        }
+
         WebRequest webRequest = new()
         {
             Body = body,
@@ -88,6 +95,7 @@ public class CatchAllController : ControllerBase
             Path = HttpContext.Request.Path,
             Query = HttpContext.Request.QueryString.ToString(),
             Scheme = HttpContext.Request.Scheme,
+            Form = form,
         };
         TunnelMessage tunnelMessage = new()
         {
@@ -110,10 +118,11 @@ public class CatchAllController : ControllerBase
             HttpContext.Response.Headers.Append(header.Key, new StringValues(header.Value.ToArray()));
         }
 
-        foreach (var cookie in response.Cookies)
-        {
-
-        }
+        // Set-Cookie header might be enough...
+        //foreach (var cookie in response.Cookies)
+        //{
+        //    HttpContext.Response.Cookies.Append(cookie.Key, cookie.Value);
+        //}
 
         if (response.Path != HttpContext.Request.Path)
         {

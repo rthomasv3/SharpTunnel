@@ -1,10 +1,11 @@
-﻿using System;
+﻿using MessagePack;
 using System.Collections.Generic;
 
 namespace SharpTunnel.Shared.Models.Configuration;
 
-[Serializable]
+[MessagePackObject]
 public class ConfigurationMessage
 {
+    [Key(0)]
     public List<RoutingPath> Paths { get; set; }
 }

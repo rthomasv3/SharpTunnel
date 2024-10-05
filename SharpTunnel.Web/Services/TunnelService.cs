@@ -60,7 +60,7 @@ public class TunnelService
         try
         {
             CancellationTokenSource cancellationTokenSource = new();
-            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(60));
+            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(30));
 
             while (!cancellationTokenSource.IsCancellationRequested)
             {

@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using MessagePack;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SharpTunnel.Shared.Enums;
@@ -35,6 +38,12 @@ public class Worker : BackgroundService
 
         HubConnection hubConnection = new HubConnectionBuilder()
             .WithUrl("https://localhost:7128/tunnelhub")
+            //.AddMessagePackProtocol(options =>
+            //{
+            //    options.SerializerOptions = MessagePackSerializerOptions.Standard
+            //        .WithSecurity(MessagePackSecurity.UntrustedData);
+            //})
+            .AddMessagePackProtocol()
             .WithAutomaticReconnect()
             .Build();
 
@@ -132,20 +141,40 @@ public class Worker : BackgroundService
             RequestUri = new Uri(MapRoute(message) + message.Path + message.Query)
         };
 
+        Console.WriteLine($"Building request for: {request.RequestUri.ToString()}");
+
         if (message.Body?.Length > 0 == true)
         {
             request.Content = new ByteArrayContent(message.Body);
         }
+        else if (message.Form != null && message.Form.Count > 0)
+        {
+            request.Content = new FormUrlEncodedContent(message.Form);
+        }
 
+        // Need to think about HTTP/2 connections vs HTTP/1.1 only headers
+        // https://github.com/dotnet/aspnetcore/pull/33502/commits
         foreach (KeyValuePair<string, string> header in message.Headers)
         {
-            if (header.Key != "Content-Type" && header.Key != "Content-Length")
+            Console.WriteLine($"Header Key: {header.Key}, Value: {header.Value}");
+
+            if ((header.Key != "Content-Type" && header.Key != "Content-Length") || request.Content == null)
             {
-                request.Headers.Add(header.Key, header.Value);
+                // Add had validation error, maybe something to do with Auth scheme missing, need to fix...
+                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
             }
             else
             {
-                request.Content.Headers.Add(header.Key.ToString(), header.Value);
+                if (header.Key == "Content-Length")
+                {
+                    MemoryStream ms = request.Content.ReadAsStream() as MemoryStream;
+                    int length = ms.ToArray().Length;
+                    request.Content.Headers.Add("Content-Length", length.ToString());
+                }
+                else
+                {
+                    request.Content.Headers.TryAddWithoutValidation(header.Key.ToString(), header.Value);
+                }
             }
         }
 
@@ -154,14 +183,14 @@ public class Worker : BackgroundService
 
     private string MapRoute(WebRequest message)
     {
-        return "http://10.0.0.62:80";
+        return "http://10.0.0.63:13378";
     }
 
     private async Task<TunnelMessage> BuildResponse(HttpResponseMessage message, string traceId)
     {
         byte[] body = await message.Content.ReadAsByteArrayAsync();
         Dictionary<string, IEnumerable<string>> headers = new();
-        List<string> cookies = new();
+        Dictionary<string, string> cookies = new();
         string contentType = null;
 
         foreach (KeyValuePair<string, IEnumerable<string>> header in message.Headers)
@@ -170,10 +199,25 @@ public class Worker : BackgroundService
 
             headers[header.Key] = header.Value;
 
-            if (header.Key == "Set-Cookie")
-            {
-                cookies = header.Value.ToList();
-            }
+            // Set-Cookie header might be enough...
+            //if (header.Key == "Set-Cookie")
+            //{
+            //    foreach (string cookie in header.Value)
+            //    {
+            //        foreach (string value in cookie.Split(';'))
+            //        {
+            //            if (value.Contains("="))
+            //            {
+            //                string[] values = value.Split("=");
+            //                cookies.Add(values[0], values[1]);
+            //            }
+            //            else
+            //            {
+            //                cookies.Add(value, null);
+            //            }
+            //        }
+            //    }
+            //}
 
             if (header.Key == "Content-Type")
             {

@@ -1,3 +1,4 @@
+using MessagePack;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using SharpTunnel.Web.Hubs;
@@ -15,11 +16,18 @@ public class Program
 
         builder.Services.AddControllers();
 
-        builder.Services.AddSignalR(options =>
-        {
-            options.EnableDetailedErrors = true;
-            options.MaximumReceiveMessageSize = long.MaxValue; // default is 32768
-        });
+        builder.Services
+            .AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = true;
+                options.MaximumReceiveMessageSize = long.MaxValue; // default is 32768
+            })
+            //.AddMessagePackProtocol(options =>
+            //{
+            //    options.SerializerOptions = MessagePackSerializerOptions.Standard
+            //        .WithSecurity(MessagePackSecurity.UntrustedData);
+            //})
+            .AddMessagePackProtocol();
 
         var app = builder.Build();
 
