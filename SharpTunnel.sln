@@ -7,7 +7,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpTunnel.Web", "SharpTun
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpTunnel.Tunnel", "SharpTunnel.Tunnel\SharpTunnel.Tunnel.csproj", "{6071E7BD-0A6B-4153-AFE0-3472B8F6646E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpTunnel.Shared", "SharpTunnel.Shared\SharpTunnel.Shared.csproj", "{38B00C6E-A4ED-4C24-ABE9-703AB6CE5F3B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpTunnel.Shared", "SharpTunnel.Shared\SharpTunnel.Shared.csproj", "{38B00C6E-A4ED-4C24-ABE9-703AB6CE5F3B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7A87F693-F846-48C9-87DE-488DEBD884FE}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		LICENSE.txt = LICENSE.txt
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
