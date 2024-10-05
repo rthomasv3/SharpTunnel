@@ -139,7 +139,14 @@ public class Worker : BackgroundService
 
         foreach (KeyValuePair<string, string> header in message.Headers)
         {
-            request.Headers.Add(header.Key, header.Value);
+            if (header.Key != "Content-Type" && header.Key != "Content-Length")
+            {
+                request.Headers.Add(header.Key, header.Value);
+            }
+            else
+            {
+                request.Content.Headers.Add(header.Key.ToString(), header.Value);
+            }
         }
 
         return request;
