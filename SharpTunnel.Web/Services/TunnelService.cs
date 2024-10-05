@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ public class TunnelService
 
     private readonly ConcurrentQueue<TunnelMessage> _messages = new();
     private readonly ConcurrentDictionary<string, TunnelMessage> _messageMap = new();
+    private readonly HashSet<string> _connectedClients = new();
 
     private WebSocket _tunnelSocket;
 
@@ -46,6 +48,24 @@ public class TunnelService
 
         _tunnelSocket = await webSocketManager.AcceptWebSocketAsync();
         await ProcessMessages();
+    }
+
+    public void AddClient(string connectionId)
+    {
+        _connectedClients.Add(connectionId);
+    }
+
+    public void RemoveClient(string connectionId)
+    {
+        _connectedClients.Remove(connectionId);
+    }
+
+    public async Task WaitForTunnelConnection()
+    {
+        while (_connectedClients.Count == 0)
+        {
+            await Task.Delay(100);
+        }
     }
 
     public void ReceiveMessage(TunnelMessage tunnelMessage)

@@ -20,23 +20,14 @@ public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private HubConnection _hubConnection;
 
     public Worker(ILogger<Worker> logger, IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
-    }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        // start up web socket connection to tunnel api...
-        // wait for messages and use a service class to process them and send them on
-        // config could come from the socket as well, it could be returned on first connect and then updated any time
-
-        // await Task.Delay(5000);
-
-
-        HubConnection hubConnection = new HubConnectionBuilder()
+        _hubConnection = new HubConnectionBuilder()
             .WithUrl("https://localhost:7128/tunnelhub", options =>
             {
                 options.AccessTokenProvider = () => Task.FromResult("5BAC8098-E84A-4DE6-A9B6-D7756CD53AE1");
@@ -49,21 +40,29 @@ public class Worker : BackgroundService
             .AddMessagePackProtocol()
             .WithAutomaticReconnect()
             .Build();
+    }
 
-        hubConnection.On<TunnelMessage>("ReceiveMessage", async message =>
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        // start up web socket connection to tunnel api...
+        // wait for messages and use a service class to process them and send them on
+        // config could come from the socket as well, it could be returned on first connect and then updated any time
+
+        _hubConnection.On<TunnelMessage>("ReceiveMessage", async message =>
         {
             Console.WriteLine($"Got Message {message.TraceIdentifier} - {message.Name}");
 
             try
             {
-                //https://stackoverflow.com/questions/12373738/how-do-i-set-a-cookie-on-httpclients-httprequestmessage
-                HttpClient client = _httpClientFactory.CreateClient();
-                HttpRequestMessage forwardRequest = BuildRequest(message.Request);
-                HttpResponseMessage localResponse = await client.SendAsync(forwardRequest);
+                if (message.MessageType == TunnelMessageType.WebRequest)
+                {
+                    HttpClient client = _httpClientFactory.CreateClient();
+                    HttpRequestMessage forwardRequest = BuildRequest(message.Request);
+                    HttpResponseMessage localResponse = await client.SendAsync(forwardRequest);
 
-                TunnelMessage response = await BuildResponse(localResponse, message.TraceIdentifier);
-
-                await hubConnection.InvokeAsync("SendMessage", response);
+                    TunnelMessage response = await BuildResponse(localResponse, message.TraceIdentifier);
+                    await _hubConnection.InvokeAsync("GetResponse", response);
+                }
             }
             catch (Exception ex)
             {
@@ -71,15 +70,19 @@ public class Worker : BackgroundService
             }
         });
 
-        await hubConnection.StartAsync(stoppingToken);
+        await _hubConnection.StartAsync(stoppingToken);
 
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            Console.WriteLine("Ping");
-            await Task.Delay(5000, stoppingToken);
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                Console.WriteLine("Ping");
+                await Task.Delay(5000, stoppingToken);
+            }
         }
+        catch (TaskCanceledException) { }
 
-        await hubConnection.StopAsync();
+        await _hubConnection.StopAsync();
 
         //TunnelMessage message = new()
         //{
@@ -198,10 +201,9 @@ public class Worker : BackgroundService
 
         foreach (KeyValuePair<string, IEnumerable<string>> header in message.Headers)
         {
-            Console.WriteLine($"{header.Key}: {String.Join(";", header.Value)}");
-
             headers[header.Key] = header.Value;
 
+            //https://stackoverflow.com/questions/12373738/how-do-i-set-a-cookie-on-httpclients-httprequestmessage
             // Set-Cookie header might be enough...
             //if (header.Key == "Set-Cookie")
             //{
@@ -232,8 +234,6 @@ public class Worker : BackgroundService
         {
             foreach (KeyValuePair<string, IEnumerable<string>> contentHeader in message.Content.Headers)
             {
-                Console.WriteLine($"{contentHeader.Key}: {String.Join(";", contentHeader.Value)}");
-
                 headers[contentHeader.Key] = contentHeader.Value;
 
                 if (contentHeader.Key == "Content-Type")

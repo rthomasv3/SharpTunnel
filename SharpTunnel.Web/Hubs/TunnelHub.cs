@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using SharpTunnel.Shared.Models;
 using SharpTunnel.Web.Services;
+using System;
 using System.Threading.Tasks;
 
 namespace SharpTunnel.Web.Hubs;
@@ -14,10 +15,20 @@ public class TunnelHub : Hub
         _tunnelService = tunnelService;
     }
 
-    public async Task SendMessage(TunnelMessage message)
+    public void GetResponse(TunnelMessage message)
     {
         _tunnelService.ReceiveMessage(message);
-        //await Clients.All.SendAsync("ReceiveMessage", message);
-        //await Clients.Groups("some group").SendAsync("Hello", message);
+    }
+
+    public override Task OnConnectedAsync()
+    {
+        _tunnelService.AddClient(Context.ConnectionId);
+        return base.OnConnectedAsync();
+    }
+
+    public override Task OnDisconnectedAsync(Exception exception)
+    {
+        _tunnelService.RemoveClient(Context.ConnectionId);
+        return base.OnDisconnectedAsync(exception);
     }
 }

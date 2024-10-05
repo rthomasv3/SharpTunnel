@@ -19,6 +19,7 @@ public class CatchAllController : ControllerBase
 {
     private readonly IHubContext<TunnelHub> _hubContext;
     private readonly TunnelService _tunnelService;
+    private readonly HashSet<string> _removeHeaders = ["Connection", "Transfer-Encoding", "Keep-Alive", "Upgrade", "Proxy-Connection"];
 
     public CatchAllController(IHubContext<TunnelHub> hubContext, TunnelService tunnelService)
     {
@@ -50,12 +51,14 @@ public class CatchAllController : ControllerBase
         // https://microsoft.github.io/reverse-proxy/articles/getting-started.html
 
         TunnelMessage tunnelMessage = await BuildRequest();
-        await _hubContext.Clients.All.SendAsync("ReceiveMessage", tunnelMessage);
 
         //CancellationTokenSource timoutToken = new();
-        //TunnelMessage clientResponse = await _hubContext.Clients.Client("tunnel")
+        //TunnelMessage response = await _hubContext.Clients.Client(_tunnelService.ConnectionId)
         //    .InvokeAsync<TunnelMessage>("ReceiveMessage", tunnelMessage, timoutToken.Token);
 
+        await _tunnelService.WaitForTunnelConnection();
+
+        await _hubContext.Clients.All.SendAsync("ReceiveMessage", tunnelMessage);
         TunnelMessage response = await _tunnelService.WaitForResponse(HttpContext.TraceIdentifier);
 
         if (response != null)
@@ -115,7 +118,10 @@ public class CatchAllController : ControllerBase
 
         foreach (var header in response.Headers)
         {
-            HttpContext.Response.Headers.Append(header.Key, new StringValues(header.Value.ToArray()));
+            if (!_removeHeaders.Contains(header.Key))
+            {
+                HttpContext.Response.Headers.Append(header.Key, new StringValues(header.Value.ToArray()));
+            }
         }
 
         // Set-Cookie header might be enough...
