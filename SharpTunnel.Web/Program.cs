@@ -2,6 +2,7 @@ using MessagePack;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using SharpTunnel.Web.Hubs;
+using SharpTunnel.Web.MIddleware;
 using SharpTunnel.Web.Services;
 
 namespace SharpTunnel;
@@ -34,8 +35,11 @@ public class Program
         app.UseHttpsRedirection();
         app.UseWebSockets();
         app.UseRouting();
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+
+        app.UseMiddleware<SignalRAuthMiddleware>();
 
         app.MapHub<TunnelHub>("/tunnelhub");
 

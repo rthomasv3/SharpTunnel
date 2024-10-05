@@ -37,7 +37,10 @@ public class Worker : BackgroundService
 
 
         HubConnection hubConnection = new HubConnectionBuilder()
-            .WithUrl("https://localhost:7128/tunnelhub")
+            .WithUrl("https://localhost:7128/tunnelhub", options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult("5BAC8098-E84A-4DE6-A9B6-D7756CD53AE1");
+            })
             //.AddMessagePackProtocol(options =>
             //{
             //    options.SerializerOptions = MessagePackSerializerOptions.Standard
