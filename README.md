@@ -3,10 +3,10 @@ SharpTunnel is a work-in-progress attempt to create a free and open-source tunne
 
 The core idea is to have a web server that will receive requests, forward them over a web socket to any connected tunnels, which will then forward the request to the end server and return the response (like a self-hostable Cloudflare Tunnel).
 
-The whole system is two parts - a public web server and tunnel service running inside your network.
+The whole system is two parts - a public web server and tunnel service running inside a private network.
 
 ## Tunnel
-The tunnel will be configured with the address of the public web server. When it starts up, it will attempt to make a web socket connection to the web server. This is using SignalR with MessagePack serialization right now. It then listens for requests and will forward them to the local server based on the configuration. The local server response is then sent back up to the web server.
+The tunnel will be configured with the address of the public web server. When it starts up, it will attempt to make a web socket connection to the web server. This is using SignalR with MessagePack serialization right now. It then listens for requests and forwards them to the local server based on the configuration. The local server response is then sent back up to the web server to return to the client.
 
 ## Web Server
 The web server will have a few responsibilities:
