@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using SharpTunnel.Shared.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,14 +11,16 @@ public class SignalRAuthMiddleware
     #region Fields
 
     private readonly RequestDelegate _next;
+    private readonly Config _config;
 
     #endregion
 
     #region Constructor
 
-    public SignalRAuthMiddleware(RequestDelegate next)
+    public SignalRAuthMiddleware(RequestDelegate next, Config config)
     {
         _next = next;
+        _config = config;
     }
 
     #endregion
@@ -33,7 +36,7 @@ public class SignalRAuthMiddleware
                 .Replace("Bearer", String.Empty, StringComparison.OrdinalIgnoreCase)
                 .Trim();
 
-            if (token == "5BAC8098-E84A-4DE6-A9B6-D7756CD53AE1")
+            if (token == _config.SignalRBearerToken)
             {
                 await _next(context);
             }

@@ -1,6 +1,8 @@
 using MessagePack;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SharpTunnel.Shared.Models;
 using SharpTunnel.Web.Hubs;
 using SharpTunnel.Web.MIddleware;
 using SharpTunnel.Web.Services;
@@ -14,6 +16,10 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services.AddSingleton<TunnelService>();
+
+        Config config = new();
+        builder.Configuration.Bind(config);
+        builder.Services.AddSingleton(config);
 
         builder.Services.AddControllers();
 

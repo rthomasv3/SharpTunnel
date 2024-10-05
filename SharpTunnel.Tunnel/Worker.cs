@@ -20,23 +20,20 @@ public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-    private HubConnection _hubConnection;
+    private readonly Config _config;
+    private readonly HubConnection _hubConnection;
 
-    public Worker(ILogger<Worker> logger, IHttpClientFactory httpClientFactory)
+    public Worker(ILogger<Worker> logger, IHttpClientFactory httpClientFactory, Config config)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _config = config;
 
         _hubConnection = new HubConnectionBuilder()
             .WithUrl("https://localhost:7128/tunnelhub", options =>
             {
-                options.AccessTokenProvider = () => Task.FromResult("5BAC8098-E84A-4DE6-A9B6-D7756CD53AE1");
+                options.AccessTokenProvider = () => Task.FromResult(_config.SignalRBearerToken);
             })
-            //.AddMessagePackProtocol(options =>
-            //{
-            //    options.SerializerOptions = MessagePackSerializerOptions.Standard
-            //        .WithSecurity(MessagePackSecurity.UntrustedData);
-            //})
             .AddMessagePackProtocol()
             .WithAutomaticReconnect()
             .Build();
