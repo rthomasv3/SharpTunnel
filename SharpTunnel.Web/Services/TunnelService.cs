@@ -62,9 +62,11 @@ public class TunnelService
 
     public async Task WaitForTunnelConnection()
     {
+        CancellationTokenSource tokenSource = new();
+        tokenSource.CancelAfter(TimeSpan.FromSeconds(30));
         while (_connectedClients.Count == 0)
         {
-            await Task.Delay(100);
+            await Task.Delay(100, tokenSource.Token);
         }
     }
 
